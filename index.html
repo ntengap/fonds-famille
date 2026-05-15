@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fonds Familial de Solidarité</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:    #C9A84C;
+  --gold-lt: #E8D08A;
+  --navy:    #0D1B35;
+  --navy2:   #162748;
+  --navy3:   #1F3560;
+  --green:   #1A6E45;
+  --green2:  #25A066;
+  --red:     #B03020;
+  --red-lt:  #FFF0EE;
+  --cream:   #FDF8F0;
+  --warm:    #F5F1E8;
+  --line:    #E8E2D9;
+  --grey:    #8A8070;
+  --dkgrey:  #444;
+  --shadow:  0 4px 24px rgba(13,27,53,.10);
+  --shadow2: 0 2px 10px rgba(13,27,53,.07);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--navy);min-height:100vh;color:var(--dkgrey)}
+
+/* ── LOADER ── */
+#loader{position:fixed;inset:0;background:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity .4s}
+#loader.hide{opacity:0;pointer-events:none}
+.loader-emblem{font-family:'Cormorant Garamond',serif;font-size:2.2rem;color:var(--gold);letter-spacing:3px;margin-bottom:.5rem;animation:pulse 1.8s ease-in-out infinite}
+.loader-bar{width:200px;height:3px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden;margin-top:1.2rem}
+.loader-fill{height:100%;background:var(--gold);border-radius:99px;animation:loadfill 1.5s ease-in-out forwards}
+@keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+@keyframes loadfill{from{width:0}to{width:100%}}
+
+/* ── SETUP BANNER ── */
+#setup-banner{display:none;background:#fffbe6;border-bottom:3px solid var(--gold);padding:1rem 1.5rem;font-size:.88rem;color:#5a4500;line-height:1.6;text-align:center}
+#setup-banner a{color:var(--navy);font-weight:600}
+#setup-banner code{background:rgba(0,0,0,.08);padding:.1rem .35rem;border-radius:4px;font-size:.82rem}
+
+/* ── LOGIN ── */
+#login-screen{min-height:100vh;display:none;align-items:center;justify-content:center;padding:2rem;background:var(--navy);position:relative;overflow:hidden}
+#login-screen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 40%,rgba(201,168,76,.08) 0%,transparent 60%),radial-gradient(ellipse at 70% 80%,rgba(26,110,69,.06) 0%,transparent 50%)}
+.login-card{background:var(--cream);border-radius:20px;padding:2.8rem 2.2rem;width:100%;max-width:420px;box-shadow:0 30px 80px rgba(0,0,0,.45);position:relative;overflow:hidden;animation:slideUp .5s ease both}
+.login-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--navy),var(--gold),var(--navy))}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.login-crest{text-align:center;margin-bottom:1.6rem}
+.crest-icon{width:56px;height:56px;background:var(--navy);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:.8rem;box-shadow:0 4px 16px rgba(13,27,53,.3)}
+.login-title{font-family:'Cormorant Garamond',serif;font-size:2rem;color:var(--navy);text-align:center;line-height:1.1;margin-bottom:.3rem}
+.login-sub{font-size:.82rem;color:var(--grey);text-align:center;margin-bottom:2rem}
+.form-label{display:block;font-size:.72rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--navy);margin-bottom:.4rem}
+.form-select,.form-input{width:100%;padding:.78rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.92rem;color:var(--navy);background:white;transition:border-color .2s,box-shadow .2s;margin-bottom:1.1rem}
+.form-select:focus,.form-input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.15)}
+.login-btn{width:100%;padding:.9rem;background:var(--navy);color:white;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:600;letter-spacing:.3px;cursor:pointer;transition:background .2s,transform .1s;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.login-btn:hover{background:var(--navy2)}.login-btn:active{transform:scale(.98)}
+.login-btn.loading{opacity:.7;pointer-events:none}
+.login-error{background:#fff0ee;border:1.5px solid #e88;border-radius:8px;padding:.7rem 1rem;font-size:.83rem;color:var(--red);margin-bottom:1rem;display:none;animation:shake .3s ease}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.login-hint{font-size:.75rem;color:var(--grey);text-align:center;margin-top:.9rem}
+
+/* ── APP SHELL ── */
+#app{display:none}
+.topbar{background:var(--navy);border-bottom:2px solid rgba(201,168,76,.3);padding:.85rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(8px)}
+.topbar-brand{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:white;display:flex;align-items:center;gap:.5rem}
+.topbar-brand span{color:var(--gold)}
+.topbar-right{display:flex;align-items:center;gap:.8rem}
+.topbar-user{font-size:.82rem;color:var(--gold-lt)}
+.topbar-btn{background:none;border:1px solid rgba(201,168,76,.3);border-radius:6px;color:var(--grey);font-size:.75rem;padding:.3rem .7rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
+.topbar-btn:hover{border-color:var(--gold);color:var(--gold)}
+.topbar-btn.treso{border-color:rgba(201,168,76,.5);color:var(--gold)}
+
+.wrap{max-width:940px;margin:0 auto;padding:1.6rem 1rem 3rem}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:.4rem;margin-bottom:1.4rem;background:rgba(255,255,255,.06);border-radius:12px;padding:.3rem}
+.tab{flex:1;padding:.6rem;border:none;background:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.83rem;font-weight:500;color:rgba(255,255,255,.5);cursor:pointer;transition:all .2s;text-align:center}
+.tab.active{background:white;color:var(--navy);font-weight:600;box-shadow:var(--shadow2)}
+.tab-content{display:none}.tab-content.active{display:block}
+
+/* ── HERO KPI ── */
+.hero{background:white;border-radius:16px;padding:1.5rem;margin-bottom:1.1rem;box-shadow:var(--shadow)}
+.hero-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:.5rem}
+.hero-title{font-family:'Cormorant Garamond',serif;font-size:1.25rem;color:var(--navy)}
+.hero-date{font-size:.75rem;color:var(--grey);background:var(--warm);padding:.3rem .7rem;border-radius:99px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;margin-bottom:1.3rem}
+.kpi{border-radius:12px;padding:1rem .7rem;text-align:center;position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px}
+.kpi.k1{background:var(--navy)}.kpi.k1::after{background:var(--gold)}
+.kpi.k2{background:var(--green)}.kpi.k2::after{background:var(--green2)}
+.kpi.k3{background:var(--warm)}.kpi.k3::after{background:var(--gold)}
+.kpi.k4{background:#fff5f3}.kpi.k4::after{background:var(--red)}
+.kpi-val{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;line-height:1}
+.kpi.k1 .kpi-val{color:var(--gold)}.kpi.k2 .kpi-val{color:white}
+.kpi.k3 .kpi-val{color:var(--navy)}.kpi.k4 .kpi-val{color:var(--red)}
+.kpi-lbl{font-size:.68rem;font-weight:600;letter-spacing:.8px;text-transform:uppercase;margin-top:.3rem}
+.kpi.k1 .kpi-lbl{color:rgba(255,255,255,.5)}.kpi.k2 .kpi-lbl{color:rgba(255,255,255,.65)}
+.kpi.k3 .kpi-lbl{color:var(--grey)}.kpi.k4 .kpi-lbl{color:#c08078}
+.progress-wrap{margin-bottom:.3rem}
+.prog-row{display:flex;justify-content:space-between;font-size:.78rem;color:var(--grey);margin-bottom:.4rem}
+.prog-pct{font-weight:700;color:var(--navy)}
+.prog-bar{height:16px;background:var(--warm);border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--green) 0%,var(--green2) 100%);transition:width 1s cubic-bezier(.4,0,.2,1);position:relative}
+.prog-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);animation:shimmer 2s infinite}
+@keyframes shimmer{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.prog-note{font-size:.72rem;color:var(--grey);margin-top:.4rem}
+
+/* ── CARD ── */
+.card{background:white;border-radius:16px;padding:1.4rem;margin-bottom:1.1rem;box-shadow:var(--shadow)}
+.card-header{display:flex;align-items:center;gap:.6rem;margin-bottom:1.1rem}
+.card-icon{width:32px;height:32px;border-radius:8px;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
+.card-title{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--navy)}
+
+/* ── STATUS BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:.3rem;padding:.28rem .7rem;border-radius:99px;font-size:.76rem;font-weight:600}
+.badge.confirmed{background:#e6f7ef;color:var(--green)}
+.badge.declared{background:#eef2ff;color:#3355bb}
+.badge.pending{background:#fff8e6;color:#8a6000}
+.badge.late{background:#fff0ee;color:var(--red)}
+
+/* ── FORM ── */
+.fg{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.9rem}
+.fl{font-size:.72rem;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--navy)}
+.fi,.fs,.fta{padding:.72rem .95rem;border:1.5px solid var(--line);border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.9rem;color:var(--navy);background:white;transition:border-color .2s}
+.fi:focus,.fs:focus,.fta:focus{outline:none;border-color:var(--gold)}
+.fta{resize:vertical;min-height:68px}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.btn{padding:.78rem 1.1rem;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem}
+.btn.primary{background:var(--navy);color:white;width:100%;justify-content:center}.btn.primary:hover{background:var(--navy2)}
+.btn.green{background:var(--green);color:white;width:100%;justify-content:center}.btn.green:hover{background:var(--green2)}
+.btn.gold{background:var(--gold);color:var(--navy)}.btn.gold:hover{background:var(--gold-lt)}
+.btn.light{background:var(--warm);color:var(--navy);border:1px solid var(--line)}.btn.light:hover{background:var(--line)}
+.btn.danger{background:#fff0ee;color:var(--red);border:1px solid #f8ccc8}.btn.danger:hover{background:#ffe4e0}
+.btn.loading{opacity:.65;pointer-events:none}
+.btn-row{display:flex;gap:.6rem;flex-wrap:wrap}
+.success-box{background:#e8f7ef;border:1px solid #b0dfc8;border-radius:9px;padding:.8rem 1rem;font-size:.85rem;color:var(--green);margin-top:.7rem;display:none}
+.info-box{background:var(--warm);border-left:3px solid var(--gold);border-radius:0 9px 9px 0;padding:.7rem 1rem;font-size:.82rem;color:#5a4a00;margin-bottom:.9rem}
+.confirmed-box{background:#e6f7ef;border:1.5px solid #9dd9bc;border-radius:12px;padding:1.1rem 1.2rem;font-size:.9rem;color:var(--green)}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+thead th{background:var(--navy);color:white;padding:.65rem .85rem;text-align:left;font-size:.7rem;font-weight:600;letter-spacing:.7px;text-transform:uppercase;white-space:nowrap}
+thead th:first-child{border-radius:7px 0 0 0}thead th:last-child{border-radius:0 7px 0 0}
+tbody td{padding:.7rem .85rem;border-bottom:1px solid var(--warm);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--warm)}
+tbody tr.me td{background:#fffbf0}
+.mname{font-weight:600;color:var(--navy);white-space:nowrap}
+.mzone{font-size:.73rem;color:var(--grey)}
+.amt-exp{color:var(--grey)}
+.amt-paid{font-weight:700;color:var(--green)}
+.amt-zero{color:#ccc}
+.treso-note{font-size:.76rem;font-style:italic;color:var(--grey);max-width:150px}
+
+/* ── ADMIN ── */
+.admin-wrap{background:var(--navy2);border-radius:16px;padding:1.4rem;box-shadow:var(--shadow)}
+.admin-head{display:flex;align-items:center;gap:.6rem;margin-bottom:1.2rem}
+.admin-title{font-family:'Cormorant Garamond',serif;color:var(--gold);font-size:1.1rem}
+.pending-item{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:1rem;margin-bottom:.7rem;display:flex;gap:.9rem;flex-wrap:wrap;align-items:flex-start}
+.pending-info{flex:1;min-width:140px}
+.pending-name{color:white;font-weight:600;font-size:.92rem;margin-bottom:.2rem}
+.pending-detail{color:var(--grey);font-size:.78rem}
+.pending-note{color:rgba(255,255,255,.4);font-size:.75rem;font-style:italic;margin-top:.2rem}
+.admin-input{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:white;border-radius:8px;padding:.6rem .9rem;font-family:'DM Sans',sans-serif;font-size:.83rem;flex:2;min-width:180px}
+.admin-input::placeholder{color:rgba(255,255,255,.3)}
+.admin-input:focus{outline:none;border-color:var(--gold)}
+.empty-state{color:rgba(255,255,255,.35);font-size:.85rem;text-align:center;padding:1.2rem 0}
+
+/* ── MODAL ── */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(4px)}
+.modal.open{display:flex}
+.mbox{background:white;border-radius:18px;padding:2rem;max-width:440px;width:100%;border-top:4px solid var(--gold);box-shadow:0 24px 60px rgba(0,0,0,.35);animation:slideUp .25s ease}
+.mtitle{font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--navy);margin-bottom:.4rem}
+.mbody{font-size:.88rem;color:var(--grey);margin-bottom:1.2rem;line-height:1.5}
+.mform{margin-bottom:1rem}
+.mactions{display:flex;gap:.6rem;justify-content:flex-end}
+.mbtn{padding:.6rem 1.2rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.87rem;font-weight:600;cursor:pointer;border:none}
+.mbtn.cancel{background:var(--warm);color:var(--navy)}.mbtn.ok{background:var(--green);color:white}.mbtn.ok:hover{background:var(--green2)}
+
+/* ── SPINNER ── */
+.spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── SYNC STATUS ── */
+.sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:.3rem}
+.sync-dot.ok{background:var(--green2)}.sync-dot.err{background:var(--red)}.sync-dot.loading{background:var(--gold);animation:pulse 1s infinite}
+
+@media(max-width:600px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .f2{grid-template-columns:1fr}
+  .topbar-user{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-emblem">✦ FFS ✦</div>
+  <div style="color:rgba(255,255,255,.4);font-size:.82rem;letter-spacing:2px">FONDS FAMILIAL DE SOLIDARITÉ</div>
+  <div class="loader-bar"><div class="loader-fill"></div></div>
+</div>
+
+<!-- SETUP BANNER (shown if SCRIPT_URL not configured) -->
+<div id="setup-banner">
+  ⚙️ <strong>Configuration requise :</strong> Remplacez <code>VOTRE_URL_APPS_SCRIPT</code> dans le fichier HTML par l'URL de votre Google Apps Script déployé.
+  Consultez le fichier <strong>SETUP.md</strong> pour le guide complet.
+</div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-crest">
+      <div class="crest-icon">🤝</div>
+      <div class="login-title">Fonds Familial<br>de Solidarité</div>
+      <div class="login-sub">Connectez-vous avec votre date d'anniversaire</div>
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <label class="form-label">Votre prénom</label>
+    <select class="form-select" id="sel-member"><option value="">— Choisissez votre nom —</option></select>
+    <label class="form-label">Date d'anniversaire</label>
+    <input class="form-input" type="date" id="inp-dob">
+    <button class="login-btn" id="login-btn" onclick="doLogin()">
+      <span id="login-btn-text">Accéder au fonds</span>
+      <span style="margin-left:.3rem">→</span>
+    </button>
+    <div class="login-hint">🔒 Votre date de naissance est votre mot de passe</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-brand">✦ <span>Fonds Familial</span> de Solidarité</div>
+    <div class="topbar-right">
+      <span class="topbar-user" id="tb-user"></span>
+      <button class="topbar-btn" id="tb-sync" onclick="syncData()" title="Synchroniser">⟳ Sync</button>
+      <button class="topbar-btn treso" id="tb-treso" style="display:none" onclick="switchTab('admin')">🔐 Trésorier</button>
+      <button class="topbar-btn" onclick="doLogout()">Déconnexion</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('dashboard')" id="tab-dashboard">📊 Tableau de bord</button>
+      <button class="tab" onclick="switchTab('moi')" id="tab-moi">👤 Ma participation</button>
+      <button class="tab" onclick="switchTab('membres')" id="tab-membres">👥 Tous les membres</button>
+      <button class="tab" onclick="switchTab('admin')" id="tab-admin" style="display:none">🔐 Trésorier</button>
+    </div>
+
+    <!-- TAB: DASHBOARD -->
+    <div class="tab-content active" id="tc-dashboard">
+      <div class="hero">
+        <div class="hero-top">
+          <div class="hero-title">📊 Avancement de la collecte 2026</div>
+          <div class="hero-date" id="hero-date">—</div>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi k1"><div class="kpi-val" id="kpi-total">—</div><div class="kpi-lbl">Participants</div></div>
+          <div class="kpi k2"><div class="kpi-val" id="kpi-paid">—</div><div class="kpi-lbl">Ont versé</div></div>
+          <div class="kpi k3"><div class="kpi-val" id="kpi-collected">—</div><div class="kpi-lbl">Collecté</div></div>
+          <div class="kpi k4"><div class="kpi-val" id="kpi-missing">—</div><div class="kpi-lbl">En attente</div></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="prog-row">
+            <span>Progression vers l'objectif</span>
+            <span class="prog-pct" id="prog-pct">0%</span>
+          </div>
+          <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+          <div class="prog-note" id="prog-note"></div>
+        </div>
+      </div>
+
+      <!-- Mini member grid -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">📋</div>
+          <div class="card-title">Statut rapide des membres</div>
+        </div>
+        <div id="mini-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.5rem"></div>
+      </div>
+    </div>
+
+    <!-- TAB: MOI -->
+    <div class="tab-content" id="tc-moi">
+      <div class="card" id="my-card">
+        <div class="card-header">
+          <div class="card-icon">👤</div>
+          <div class="card-title" id="my-card-title">Ma participation</div>
+        </div>
+        <div id="my-card-body">
+          <div style="color:var(--grey);font-size:.88rem">Chargement…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: MEMBRES -->
+    <div class="tab-content" id="tc-membres">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">👥</div>
+          <div class="card-title">Tableau collectif</div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Membre</th><th>Zone</th><th>Attendu</th>
+                <th>Date versement</th><th>Versé</th>
+                <th>Statut</th><th>Message trésorier</th>
+              </tr>
+            </thead>
+            <tbody id="tbl-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: ADMIN -->
+    <div class="tab-content" id="tc-admin">
+      <div class="admin-wrap">
+        <div class="admin-head">
+          <div style="font-size:1.3rem">🔐</div>
+          <div class="admin-title">Espace Trésorier</div>
+          <div style="margin-left:auto;display:flex;gap:.5rem;align-items:center">
+            <span id="sync-status" style="font-size:.75rem;color:var(--grey)"></span>
+          </div>
+        </div>
+        <div style="margin-bottom:1.2rem">
+          <div style="color:var(--gold);font-size:.72rem;font-weight:600;letter-spacing:.8px;text-transform:uppercase;margin-bottom:.6rem">Déclarations à confirmer</div>
+          <div id="pending-list"></div>
+        </div>
+        <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:1rem">
+          <div style="color:var(--gold);font-size:.72rem;font-weight:600;letter-spacing:.8px;text-transform:uppercase;margin-bottom:.6rem">Actions</div>
+          <div class="btn-row">
+            <button class="btn gold" onclick="openAddMember()">＋ Ajouter un membre</button>
+            <button class="btn light" onclick="syncData()">⟳ Rafraîchir</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /wrap -->
+</div><!-- /app -->
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+  <div class="mbox">
+    <div class="mtitle" id="m-title"></div>
+    <div class="mbody" id="m-body"></div>
+    <div class="mform" id="m-form"></div>
+    <div class="mactions">
+      <button class="mbtn cancel" onclick="closeModal()">Annuler</button>
+      <button class="mbtn ok" id="m-ok" onclick="modalOk()">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CONFIG — remplacez par votre URL Apps Script déployée
+// ═══════════════════════════════════════════════════════
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHj3PxqqLZumJU-8uGKl4UK1Ib8hoX4HllDYmL-yl7fls2TFqoTWffdAIHzgfP7rYfRA/exec';
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let members = [];
+let currentUser = null;
+let modalAction = null;
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+window.addEventListener('load', async () => {
+  if (SCRIPT_URL === 'VOTRE_URL_APPS_SCRIPT') {
+    document.getElementById('setup-banner').style.display = 'block';
+    // Demo mode with fake data
+    members = getDemoData();
+    populateSelect();
+    hideLo();
+    return;
+  }
+  try {
+    await fetchMembers();
+    populateSelect();
+  } catch(e) {
+    members = getDemoData();
+    populateSelect();
+    showErr('Connexion au serveur impossible. Mode démonstration activé.');
+  }
+  hideLo();
+});
+
+function hideLo() {
+  setTimeout(() => {
+    document.getElementById('loader').classList.add('hide');
+    document.getElementById('login-screen').style.display = 'flex';
+  }, 1600);
+}
+
+// ═══════════════════════════════════════════════════════
+// API CALLS
+// ═══════════════════════════════════════════════════════
+async function api(params) {
+  const url = new URL(SCRIPT_URL);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+  const r = await fetch(url, { redirect: 'follow' });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const txt = await r.text();
+  try { return JSON.parse(txt); } catch { return txt; }
+}
+
+async function apiPost(body) {
+  const r = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    redirect: 'follow',
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const txt = await r.text();
+  try { return JSON.parse(txt); } catch { return txt; }
+}
+
+async function fetchMembers() {
+  const res = await api({ action: 'getMembers' });
+  if (res.error) throw new Error(res.error);
+  members = res.members || [];
+}
+
+async function syncData() {
+  const btn = document.getElementById('tb-sync');
+  btn.innerHTML = '<span class="spin"></span>';
+  try {
+    await fetchMembers();
+    renderAll();
+    btn.innerHTML = '✓ Sync';
+    setTimeout(() => btn.innerHTML = '⟳ Sync', 1500);
+  } catch(e) {
+    btn.innerHTML = '✗ Erreur';
+    setTimeout(() => btn.innerHTML = '⟳ Sync', 2000);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════
+function populateSelect() {
+  const sel = document.getElementById('sel-member');
+  members.forEach(m => {
+    const o = document.createElement('option');
+    o.value = m.id; o.textContent = m.name; sel.appendChild(o);
+  });
+}
+
+async function doLogin() {
+  const id  = parseInt(document.getElementById('sel-member').value);
+  const dob = document.getElementById('inp-dob').value;
+  const err = document.getElementById('login-error');
+  err.style.display = 'none';
+
+  if (!id)  { showLoginErr('Choisissez votre nom.'); return; }
+  if (!dob) { showLoginErr('Saisissez votre date d\'anniversaire.'); return; }
+
+  const btn = document.getElementById('login-btn');
+  btn.classList.add('loading');
+  document.getElementById('login-btn-text').textContent = 'Vérification…';
+
+  const m = members.find(x => x.id === id);
+  if (!m || m.dob !== dob) {
+    btn.classList.remove('loading');
+    document.getElementById('login-btn-text').textContent = 'Accéder au fonds';
+    showLoginErr('Date d\'anniversaire incorrecte. Réessayez.');
+    return;
+  }
+
+  currentUser = m;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('tb-user').textContent = m.name;
+  if (m.isTreso) {
+    document.getElementById('tb-treso').style.display = 'block';
+    document.getElementById('tab-admin').style.display = 'block';
+  }
+  renderAll();
+  btn.classList.remove('loading');
+  document.getElementById('login-btn-text').textContent = 'Accéder au fonds';
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('sel-member').value = '';
+  document.getElementById('inp-dob').value = '';
+}
+
+function showLoginErr(msg) {
+  const e = document.getElementById('login-error');
+  e.textContent = msg; e.style.display = 'block';
+}
+
+// ═══════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('tc-' + name).classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════
+function renderAll() {
+  renderDashboard();
+  renderMyCard();
+  renderTable();
+  if (currentUser?.isTreso) renderAdmin();
+}
+
+/* -- DASHBOARD -- */
+function renderDashboard() {
+  const total     = members.length;
+  const confirmed = members.filter(m => m.status === 'confirmed');
+  const collected = confirmed.reduce((s,m) => s + (+m.paid||0), 0);
+  const target    = members.reduce((s,m) => s + (+m.expected||300), 0);
+  const missing   = target - collected;
+  const pct       = target ? Math.min(100, Math.round(collected/target*100)) : 0;
+
+  document.getElementById('kpi-total').textContent = total;
+  document.getElementById('kpi-paid').textContent  = confirmed.length;
+  document.getElementById('kpi-collected').textContent = fmt(collected) + ' €';
+  document.getElementById('kpi-missing').textContent   = fmt(missing)   + ' €';
+  document.getElementById('prog-pct').textContent  = pct + '%';
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-note').textContent = `${fmt(collected)} € collectés sur ${fmt(target)} € attendus · Échéance : 31 mai 2026`;
+  document.getElementById('hero-date').textContent = 'Mis à jour : ' + new Date().toLocaleDateString('fr-FR');
+
+  // Mini grid
+  const grid = document.getElementById('mini-grid');
+  grid.innerHTML = members.map(m => `
+    <div style="padding:.6rem .8rem;border-radius:10px;border:1.5px solid ${statusColor(m.status)};background:${statusBg(m.status)}">
+      <div style="font-weight:600;font-size:.82rem;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(m.name)}</div>
+      <div style="font-size:.7rem;margin-top:.2rem">${statusDot(m.status)} ${statusLabel(m.status)}</div>
+    </div>`).join('');
+}
+
+/* -- MY CARD -- */
+function renderMyCard() {
+  const m = members.find(x => x.id === currentUser.id);
+  document.getElementById('my-card-title').textContent = `Ma participation — ${m.name}`;
+  const body = document.getElementById('my-card-body');
+
+  if (m.status === 'confirmed') {
+    body.innerHTML = `
+      <div class="confirmed-box">
+        <div style="font-weight:700;margin-bottom:.4rem">✅ Participation confirmée par le trésorier</div>
+        <div>Montant : <strong>${fmt(m.paid)} €</strong> · Date : <strong>${fmtDate(m.payDate)}</strong></div>
+        ${m.treso ? `<div style="margin-top:.5rem;font-style:italic;color:var(--green);opacity:.8">💬 ${esc(m.treso)}</div>` : ''}
+      </div>`;
+    return;
+  }
+
+  const isDeclared = m.status === 'declared';
+  body.innerHTML = `
+    ${isDeclared ? `<div class="info-box">⏳ Votre versement de <strong>${fmt(m.paid)} €</strong> est déclaré. En attente de confirmation du trésorier.
+      ${m.treso ? `<br>💬 <em>${esc(m.treso)}</em>` : ''}</div>` : 
+      `<div class="info-box">💡 Déclarez votre versement ci-dessous. Le trésorier le confirmera ensuite.</div>`}
+    <div class="f2">
+      <div class="fg">
+        <label class="fl">Montant versé (€)</label>
+        <input class="fi" type="number" id="my-amount" value="${m.paid || m.expected || 300}" min="1">
+      </div>
+      <div class="fg">
+        <label class="fl">Date du versement</label>
+        <input class="fi" type="date" id="my-date" value="${m.payDate || today()}">
+      </div>
+    </div>
+    <div class="fg">
+      <label class="fl">Note / Référence (optionnel)</label>
+      <textarea class="fta" id="my-note" placeholder="Référence virement, banque utilisée…">${m.note||''}</textarea>
+    </div>
+    <button class="btn green" id="my-submit-btn" onclick="submitMyContrib()">
+      ${isDeclared ? '✏️ Modifier ma déclaration' : '📤 Déclarer mon versement'}
+    </button>
+    <div class="success-box" id="my-success">✅ Déclaration envoyée ! Le trésorier va confirmer votre versement.</div>`;
+}
+
+/* -- TABLE -- */
+function renderTable() {
+  const tbody = document.getElementById('tbl-body');
+  tbody.innerHTML = members.map(m => {
+    const isMe = m.id === currentUser.id;
+    return `<tr class="${isMe?'me':''}">
+      <td><div class="mname">${esc(m.name)}${isMe?' 👤':''}</div></td>
+      <td><div class="mzone">${esc(m.zone||'')}</div></td>
+      <td class="amt-exp">${fmt(m.expected||300)} €</td>
+      <td>${m.payDate ? fmtDate(m.payDate) : '<span class="amt-zero">—</span>'}</td>
+      <td>${m.paid ? `<span class="amt-paid">${fmt(m.paid)} €</span>` : '<span class="amt-zero">—</span>'}</td>
+      <td>${badge(m.status)}</td>
+      <td class="treso-note">${m.treso ? esc(m.treso) : '<span class="amt-zero">—</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* -- ADMIN -- */
+function renderAdmin() {
+  const pending = members.filter(m => m.status === 'declared');
+  const list = document.getElementById('pending-list');
+  if (!pending.length) {
+    list.innerHTML = '<div class="empty-state">✨ Aucune déclaration en attente</div>';
+  } else {
+    list.innerHTML = pending.map(m => `
+      <div class="pending-item">
+        <div class="pending-info">
+          <div class="pending-name">${esc(m.name)}</div>
+          <div class="pending-detail">${fmt(m.paid||0)} € · ${fmtDate(m.payDate)} · ${esc(m.zone||'')}</div>
+          ${m.note ? `<div class="pending-note">📝 ${esc(m.note)}</div>` : ''}
+        </div>
+        <input type="text" class="admin-input" id="tmsg-${m.id}" placeholder="Message de confirmation…">
+        <div style="display:flex;flex-direction:column;gap:.4rem">
+          <button class="btn gold" style="font-size:.8rem;padding:.5rem .8rem" onclick="confirmPayment(${m.id})">✅ Confirmer</button>
+          <button class="btn danger" style="font-size:.8rem;padding:.5rem .8rem" onclick="rejectPayment(${m.id})">✗ Rejeter</button>
+        </div>
+      </div>`).join('');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════════════════
+async function submitMyContrib() {
+  const amount = parseFloat(document.getElementById('my-amount').value);
+  const date   = document.getElementById('my-date').value;
+  const note   = document.getElementById('my-note').value.trim();
+  if (!amount || amount <= 0) { alert('Montant invalide.'); return; }
+  if (!date) { alert('Date requise.'); return; }
+
+  const btn = document.getElementById('my-submit-btn');
+  btn.classList.add('loading'); btn.textContent = 'Envoi…';
+
+  try {
+    const res = await apiPost({ action:'declarePayment', memberId: currentUser.id, paid: amount, payDate: date, note });
+    if (res.error) throw new Error(res.error);
+    // update local
+    const m = members.find(x => x.id === currentUser.id);
+    m.paid = amount; m.payDate = date; m.note = note; m.status = 'declared';
+    document.getElementById('my-success').style.display = 'block';
+    renderMyCard(); renderDashboard(); renderTable();
+  } catch(e) {
+    // Demo mode: update locally
+    const m = members.find(x => x.id === currentUser.id);
+    m.paid = amount; m.payDate = date; m.note = note; m.status = 'declared';
+    renderMyCard(); renderDashboard(); renderTable();
+    btn.classList.remove('loading');
+  }
+}
+
+async function confirmPayment(id) {
+  const msg = document.getElementById(`tmsg-${id}`)?.value.trim() || 'Versement confirmé. Merci pour votre engagement !';
+  try {
+    await apiPost({ action:'confirmPayment', memberId: id, treso: msg, status: 'confirmed' });
+  } catch(e) {}
+  const m = members.find(x => x.id === id);
+  m.status = 'confirmed'; m.treso = msg;
+  renderAll();
+}
+
+async function rejectPayment(id) {
+  const msg = document.getElementById(`tmsg-${id}`)?.value.trim() || 'Versement non retrouvé. Merci de recontacter le trésorier.';
+  try {
+    await apiPost({ action:'confirmPayment', memberId: id, treso: msg, status: 'pending' });
+  } catch(e) {}
+  const m = members.find(x => x.id === id);
+  m.status = 'pending'; m.treso = msg; m.paid = 0; m.payDate = '';
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════════════
+// ADD MEMBER (modal)
+// ═══════════════════════════════════════════════════════
+function openAddMember() {
+  document.getElementById('m-title').textContent = 'Ajouter un participant';
+  document.getElementById('m-body').textContent  = 'Renseignez les informations du nouveau membre.';
+  document.getElementById('m-form').innerHTML = `
+    <div class="fg"><label class="fl">Nom complet</label><input class="fi" id="nm-name" placeholder="Prénom Nom"></div>
+    <div class="f2">
+      <div class="fg"><label class="fl">Zone</label>
+        <select class="fs" id="nm-zone">
+          <option value="Hors Afrique">Hors Afrique</option>
+          <option value="Afrique">Afrique</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Date d'anniversaire</label><input class="fi" type="date" id="nm-dob"></div>
+    </div>
+    <div class="fg"><label class="fl">Cotisation 2026 (€)</label><input class="fi" type="number" id="nm-exp" value="300"></div>`;
+  modalAction = async () => {
+    const name = document.getElementById('nm-name').value.trim();
+    const zone = document.getElementById('nm-zone').value;
+    const dob  = document.getElementById('nm-dob').value;
+    const exp  = parseFloat(document.getElementById('nm-exp').value) || 300;
+    if (!name||!dob) { alert('Remplissez tous les champs.'); return; }
+    const newId = Math.max(0,...members.map(m=>m.id)) + 1;
+    const newM  = { id:newId, name, zone, dob, expected:exp, paid:0, payDate:'', treso:'', note:'', status:'pending' };
+    try { await apiPost({ action:'addMember', member: JSON.stringify(newM) }); } catch(e){}
+    members.push(newM);
+    const sel = document.getElementById('sel-member');
+    const o = document.createElement('option'); o.value=newId; o.textContent=name; sel.appendChild(o);
+    closeModal(); renderAll();
+  };
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function modalOk() { if(modalAction) modalAction(); }
+
+// ═══════════════════════════════════════════════════════
+// DEMO DATA (used if SCRIPT_URL not configured)
+// ═══════════════════════════════════════════════════════
+function getDemoData() {
+  return [
+    {id:1,  name:"Sophie Martin",     zone:"Hors Afrique", dob:"1985-03-15", expected:300, paid:300, payDate:"2026-05-02", treso:"Virement reçu. Merci Sophie !", note:"", status:"confirmed"},
+    {id:2,  name:"Jean-Pierre Kouame",zone:"Hors Afrique", dob:"1978-07-22", expected:300, paid:300, payDate:"2026-05-05", treso:"Confirmé.", note:"Virement SEPA", status:"confirmed"},
+    {id:3,  name:"Marie Dubois",      zone:"Hors Afrique", dob:"1990-11-05", expected:300, paid:250, payDate:"2026-05-10", treso:"", note:"Solde en cours", status:"declared"},
+    {id:4,  name:"Thierry Nkosi",     zone:"Hors Afrique", dob:"1983-01-30", expected:300, paid:0,   payDate:"", treso:"", note:"", status:"pending"},
+    {id:5,  name:"Amina Traoré",      zone:"Afrique",      dob:"1992-06-18", expected:300, paid:300, payDate:"2026-05-08", treso:"Reçu. Merci !", note:"", status:"confirmed"},
+    {id:6,  name:"Paul Leclerc",      zone:"Hors Afrique", dob:"1975-09-03", expected:300, paid:0,   payDate:"", treso:"", note:"", status:"pending"},
+    {id:7,  name:"Fatou Diallo",      zone:"Afrique",      dob:"1988-12-25", expected:300, paid:280, payDate:"2026-05-12", treso:"", note:"Virement mobile", status:"declared"},
+    {id:8,  name:"Christelle Bérard", zone:"Hors Afrique", dob:"1995-04-10", expected:300, paid:300, payDate:"2026-05-03", treso:"Parfait !", note:"", status:"confirmed"},
+    {id:9,  name:"Marc Owusu",        zone:"Hors Afrique", dob:"1970-08-20", expected:300, paid:0,   payDate:"", treso:"", note:"", status:"pending"},
+    {id:10, name:"Lucie Bernard",     zone:"Hors Afrique", dob:"1982-02-14", expected:300, paid:300, payDate:"2026-05-07", treso:"Reçu merci", note:"", status:"confirmed"},
+    {id:11, name:"Kofi Asante",       zone:"Afrique",      dob:"1993-05-07", expected:300, paid:0,   payDate:"", treso:"", note:"", status:"pending"},
+    {id:12, name:"Nadège Fontaine",   zone:"Hors Afrique", dob:"1976-10-19", expected:300, paid:300, payDate:"2026-05-04", treso:"Confirmé !", note:"", status:"confirmed"},
+    {id:13, name:"David Mensah",      zone:"Hors Afrique", dob:"1987-03-28", expected:300, paid:0,   payDate:"", treso:"", note:"", status:"pending"},
+    {id:14, name:"Isabelle Renard",   zone:"Hors Afrique", dob:"1981-07-11", expected:300, paid:300, payDate:"2026-05-09", treso:"✓ Validé", note:"", status:"confirmed"},
+    {id:15, name:"Emmanuel Yeboah",   zone:"Hors Afrique", dob:"1984-01-16", expected:300, paid:0,   payDate:"", treso:"", note:"", status:"pending"},
+    {id:16, name:"Claire Dupont",     zone:"Hors Afrique", dob:"1979-08-03", expected:300, paid:300, payDate:"2026-05-06", treso:"Reçu !", note:"", status:"confirmed"},
+    {id:17, name:"Le Trésorier",      zone:"Hors Afrique", dob:"1980-01-01", expected:300, paid:300, payDate:"2026-05-01", treso:"", note:"", status:"confirmed", isTreso:true},
+  ];
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════
+function fmt(n)   { return Number(n||0).toLocaleString('fr-FR'); }
+function today()  { return new Date().toISOString().split('T')[0]; }
+function fmtDate(d) { if(!d) return ''; const [y,m,dy]=d.split('-'); return `${dy}/${m}/${y}`; }
+function esc(s)   { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function statusColor(s) { return {confirmed:'#9dd9bc',declared:'#99b3ee',pending:'#e8d8aa',late:'#f8aaaa'}[s]||'#e0ddd5'; }
+function statusBg(s)    { return {confirmed:'#e6f7ef',declared:'#eef2ff',pending:'#fff8e6',late:'#fff0ee'}[s]||'white'; }
+function statusLabel(s) { return {confirmed:'Confirmé',declared:'Déclaré',pending:'En attente',late:'En retard'}[s]||s; }
+function statusDot(s)   { return {confirmed:'🟢',declared:'🔵',pending:'🟡',late:'🔴'}[s]||'⚪'; }
+function badge(s) {
+  const labels = {confirmed:'✅ Confirmé',declared:'🔵 Déclaré',pending:'⏳ En attente',late:'❌ En retard'};
+  return `<span class="badge ${s}">${labels[s]||s}</span>`;
+}
+</script>
+</body>
+</html>
