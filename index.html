@@ -365,7 +365,7 @@ tbody tr.me td{background:#fffbf0}
 // ═══════════════════════════════════════════════════════
 // CONFIG — remplacez par votre URL Apps Script déployée
 // ═══════════════════════════════════════════════════════
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwm_QWABpkm9EAaNQV43V1yY4ZSBis3Rz8vEzjtpRszZcHCUbFjifYSeni6Z6_e-79fog/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxE0UzAZUr0w81MqY039L7KbQ2h0TsMzd5olKCpvSkaRcMPslwO2-nXJjmEv0Vdtmrm4Q/exec';
 
 // ═══════════════════════════════════════════════════════
 // STATE
@@ -530,7 +530,7 @@ function renderDashboard() {
   const total     = members.length;
   const confirmed = members.filter(m => m.status === 'confirmed');
   const collected = confirmed.reduce((s,m) => s + (+m.paid||0), 0);
-  const target    = members.reduce((s,m) => s + (+m.expected||300), 0);
+  const target    = members.reduce((s,m) => s + (+m.expected||250), 0);
   const missing   = target - collected;
   const pct       = target ? Math.min(100, Math.round(collected/target*100)) : 0;
 
@@ -576,7 +576,7 @@ function renderMyCard() {
     <div class="f2">
       <div class="fg">
         <label class="fl">Montant versé (€)</label>
-        <input class="fi" type="number" id="my-amount" value="${m.paid || m.expected || 300}" min="1">
+        <input class="fi" type="number" id="my-amount" value="${m.paid || m.expected || 250}" min="1">
       </div>
       <div class="fg">
         <label class="fl">Date du versement</label>
@@ -601,7 +601,7 @@ function renderTable() {
     return `<tr class="${isMe?'me':''}">
       <td><div class="mname">${esc(m.name)}${isMe?' 👤':''}</div></td>
       <td><div class="mzone">${esc(m.zone||'')}</div></td>
-      <td class="amt-exp">${fmt(m.expected||300)} €</td>
+      <td class="amt-exp">${fmt(m.expected||250)} €</td>
       <td>${m.payDate ? fmtDate(m.payDate) : '<span class="amt-zero">—</span>'}</td>
       <td>${m.paid ? `<span class="amt-paid">${fmt(m.paid)} €</span>` : '<span class="amt-zero">—</span>'}</td>
       <td>${badge(m.status)}</td>
@@ -700,12 +700,12 @@ function openAddMember() {
       </div>
       <div class="fg"><label class="fl">Date d'anniversaire</label><input class="fi" type="date" id="nm-dob"></div>
     </div>
-    <div class="fg"><label class="fl">Cotisation 2026 (€)</label><input class="fi" type="number" id="nm-exp" value="300"></div>`;
+    <div class="fg"><label class="fl">Cotisation 2026 (€)</label><input class="fi" type="number" id="nm-exp" value="250"></div>`;
   modalAction = async () => {
     const name = document.getElementById('nm-name').value.trim();
     const zone = document.getElementById('nm-zone').value;
     const dob  = document.getElementById('nm-dob').value;
-    const exp  = parseFloat(document.getElementById('nm-exp').value) || 300;
+    const exp  = parseFloat(document.getElementById('nm-exp').value) || 250;
     if (!name||!dob) { alert('Remplissez tous les champs.'); return; }
     const newId = Math.max(0,...members.map(m=>m.id)) + 1;
     const newM  = { id:newId, name, zone, dob, expected:exp, paid:0, payDate:'', treso:'', note:'', status:'pending' };
